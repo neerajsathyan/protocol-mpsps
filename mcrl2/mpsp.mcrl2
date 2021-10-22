@@ -1,14 +1,6 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% input controller                                                             %
-% add safety property where when two buttons are pressed twice, action is taken%
-% from the first button pressed.                                               %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-sort 
-	Button = struct up | down | stop | resume | undock | reset;
-
-act
-	buttonPress, buttonRelease: Button;
-
+%Input Controller
+sort Button = struct up | down | stop | resume | undock | reset;
+act buttonPress, buttonRelease: Button;
 proc
 	ButtonProc(blabel: Button) =
 		buttonPress(blabel).buttonRelease(blabel);
@@ -17,18 +9,7 @@ proc
 
 %No need of init state for input controller...
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Output Controller: M2 -> Off,left,right                                     %
-%				   M1 -> Off,up,down                                        %
-%                    v_brake -> On, Off                                       %
-%                    h_brake -> On, Off                                       %
-%				   D -> docked, undocked                                    %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Output Controller:
 sort
 	m1 = struct up|down|m1Off;
 	m2 = struct left|right|m2Off;
@@ -52,30 +33,15 @@ proc
 	hBrakeProc(brakeState: brake) =
 		((brakeState == off) -> hBrakeApply.hBrakeProc(on) <> hBrakeRelease.hBrakeProc(on));
 	dockerProc = undock.dockerProc;
-	OutputController(st: LogicalState) =
+	OutputController =
 		allow(
 			{m1UpA, m1DownA, m1OffA, m2LeftA, m2RightA, m2OffA, vBrakeApply, vBrakeRelease, hBrakeApply, hBrakeRelease, undock},
 			comm (
-				m1Proc(m1(initialState)) || m2Proc(m2(initialState)) || vBrakeProc(vBrake(initialState)) || hBrakeProc(hBrake(initialState)) || dockerProc
+				m1Proc || m2Proc || vBrakeProc || hBrakeProc || dockerProc
 			)
 		);
-		
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Sensor Controller: horizontal_location									%
-%				   vertical_location									%
-%                    docking_status										%
-%                    standard_height										%
-%				   max_height											%
-%				   min_height											%
-%                    leftmost_pos										%
-%                    rightmost_pos										%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%		
-
+% Sensor Controller
 sort
 	position = struct leftmostPos|rightmostPos|lowermostPos|uppermostPos|stdHeightPos;
 
@@ -92,3 +58,41 @@ proc
     			comm(
       			horizontalProc || verticalProc || dockSensorProc
   			) );
+
+% Logical Unit
+sort deviceMode = 
+	struct normal|emergency;
+sort calibrationStatus = 
+	struct calibrated | uncalibrated;
+sort LogicalState = struct ls(
+		mode: deviceMode,
+		vBrake: brake,
+		hBrake: brake,
+		m1State: m1,
+		m2State: m2,
+		calibrate: calibrationStatus,
+		posState: position
+	);
+	
+
+
+% Logic implementation
+act 	
+	recievePress, recieveRelease: Button;
+	recieveIsAtLeftMostPos, recieveIsAtRightMostPos, recieveIsAtStandardHeight, recieveIsAtMinHeight, recieveIsAtMaxHeight;
+	recieveDock, sendUndock;
+	sendMotorUp, sendMotorDown, sendMotorLeft, sendMotorRight;
+	vMotorOff, hMotorOff;
+	sendVBrakeApply, sendVBrakeRelease, sendHBrakeApply, sendHBrakeRelease;
+	setCalibratedHeight, unsetCalibratedHeight;
+	emergencyMode, normalMode;
+
+proc
+	LogicProc(ls: LogicalState) = sum l: ls. mode == normal -> NormalProc(ls) <> EmergencyProc(ls);
+	NormalProc(st: LogicalState) = ButtonProc(stop).EmergencyProc(st) + ButtonProc(resume).LogicProc(st) + ButtonProc(undock).sendUndock.LogicProc(st) + ButtonProc(reset).unSetCalibaratedHeight.LogicProc(st);
+
+
+init
+	allow (
+	{buttonPress, buttonRelease, m1UpA, m1DownA, m1OffA, m2LeftA, m2RightA, m2OffA, vBrakeApply, vBrakeRelease, hBrakeApply, hBrakeRelease, undock, isAtLeftMostPos, isAtRightMostPos, isAtStandardHeight, isAtMaxHeight, isAtMinHeight, dock}	
+);
