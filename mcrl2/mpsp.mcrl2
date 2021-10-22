@@ -1,0 +1,94 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% input controller                                                             %
+% add safety property where when two buttons are pressed twice, action is taken%
+% from the first button pressed.                                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sort 
+	Button = struct up | down | stop | resume | undock | reset;
+
+act
+	buttonPress, buttonRelease: Button;
+
+proc
+	ButtonProc(blabel: Button) =
+		buttonPress(blabel).buttonRelease(blabel);
+	InputProc = 
+		(ButtonProc(up)+ButtonProc(down)+ButtonProc(stop)+ButtonProc(resume)+ButtonProc(undock)+ButtonProc(reset)).InputProc;
+
+%No need of init state for input controller...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Output Controller: M2 -> Off,left,right                                     %
+%				   M1 -> Off,up,down                                        %
+%                    v_brake -> On, Off                                       %
+%                    h_brake -> On, Off                                       %
+%				   D -> docked, undocked                                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sort
+	m1 = struct up|down|m1Off;
+	m2 = struct left|right|m2Off;
+	brake = struct on|off;
+	docker = struct docked|undocked;
+
+act
+	m1UpA, m1DownA, m1OffA;
+	m2LeftA, m2RightA, m2OffA;
+	vBrakeApply, vBrakeRelease;
+	hBrakeApply, hBrakeRelease;
+	undock;
+
+proc
+	m1Proc(motorState:m1) = 
+		((motorState == m1Off) -> (m1UpA.m1Proc(up) + m1DownA.m1Proc(down)) <> ((motorState == up) -> (m1OffA.m1Proc(m1Off)+m1DownA.m1Proc(down)) <> (motorState == down) -> (mlOffA.m1Proc(m1Off)+m1UpA.m1Proc(up))));
+	m2Proc(motorState:m2) = 
+		((motorState == m2Off) -> (m2LeftA.m2Proc(left) + m2rightA.m2Proc(right)) <> ((motorState == left) -> (m2OffA.m2Proc(m2Off)+m2rightA.m2Proc(right)) <> (motorState == right) -> (m2OffA.m2Proc(m2Off)+m2rightA.m2Proc(right))));
+	vBrakeProc(brakeState: brake) = 
+		((brakeState == off) -> vBrakeApply.vBrakeProc(on) <> vBrakeRelease.vBrakeProc(off));
+	hBrakeProc(brakeState: brake) =
+		((brakeState == off) -> hBrakeApply.hBrakeProc(on) <> hBrakeRelease.hBrakeProc(on));
+	dockerProc = undock.dockerProc;
+	OutputController(st: LogicalState) =
+		allow(
+			{m1UpA, m1DownA, m1OffA, m2LeftA, m2RightA, m2OffA, vBrakeApply, vBrakeRelease, hBrakeApply, hBrakeRelease, undock},
+			comm (
+				m1Proc(m1(initialState)) || m2Proc(m2(initialState)) || vBrakeProc(vBrake(initialState)) || hBrakeProc(hBrake(initialState)) || dockerProc
+			)
+		);
+		
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Sensor Controller: horizontal_location									%
+%				   vertical_location									%
+%                    docking_status										%
+%                    standard_height										%
+%				   max_height											%
+%				   min_height											%
+%                    leftmost_pos										%
+%                    rightmost_pos										%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%		
+
+sort
+	position = struct leftmostPos|rightmostPos|lowermostPos|uppermostPos|stdHeightPos;
+
+act
+	isAtLeftMostPos, isAtRightMostPos, isAtStandardHeight, isAtMaxHeight, isAtMinHeight, dock;
+
+proc
+	horizontalProc = (isAtLeftMostPos + isAtRightMostPos).horizontalProc;
+	verticalProc = (isAtStandardHeight + isAtMaxHeight + isAtMinHeight).verticalProc;
+	dockSensorProc = dock.dockSensorProc;
+	SensorController = 
+		allow(
+    			{ isAtLeftMostPos, isAtRightMostPos, isAtStandardHeight, isAtMaxHeight, isAtMinHeight },
+    			comm(
+      			horizontalProc || verticalProc || dockSensorProc
+  			) );
