@@ -1,3 +1,40 @@
 \label{task3}
 % 3. Translate the global requirements in terms of these interactions.
 \section{Interactions of Control Systems}
+The requirements are set up into the model specifications using mu-calculus properties and are checked for validity. These requirement properties form an integral interaction systems behaviour of the MPSP model. The interactions are mentioned here:
+
+\begin{itemize}
+    \item \textbf{P01} If a motor is on, the corresponding brake must not be applied. \\
+        If m1OffA or m2OffA is false, then correspondingly vBrakeApply or hBrakeApply is set to true.
+    \item \textbf{P02:} The horizontal motor should be on only if the MPSP is docked. \\
+        If dock is true then m1UpA and m1DownA can activate.
+    \item \textbf{P03:} The horizontal brake should not be applied if the MPSP is docked. \\ 
+        if dock is true then hBrakeRelease should be set to true and hBrakeApply to false.
+    \item \textbf{P04:} The bed must be in the rightmost position if the MPSP is  undocked. \\ 
+        if dock is false then isAtLeftMostPos is true.
+    \item \textbf{P05:} The horizontal brake must be applied if the MPSP is undocked. \\
+        if dock is false then hBrakeRelease should be set to false and hBrakeApply to true.
+    \item \textbf{P06:} The vertical brake must always be applied if the vertical motor is off. \\
+        if m1OffA is set then vBrakeApply is carried out.
+    \item \textbf{P07:} The vertical brake must always be applied if the MPSP is docked. \\ 
+        
+    \item \textbf{P08:} In emergency mode, the horizontal brake must be released. \\
+    \item \textbf{P09:} If the MPSP is undocked and uncalibrated, the bed should only be moved up and down. \\
+    \item \textbf{P10:} The MPSP should not move above the uppermost position, below the lowermost position. \\
+\end{itemize}
+
+\begin{itemize}
+    \item \textbf{P11:}  When the MPSP is docked and at the rightmost position, the \verb$reset$ button will set the standard height. \\
+    \item \textbf{P12:} When the MPSP is undocked and the \verb$reset$ button is pressed, the standard height is forgotten.\\
+    \item \textbf{P13:} If the MPSP is docked and calibrated, the vertical brakes are applied and the vertical motor turned off. \\
+    \item \textbf{P14:} If the \verb$stop$ button is pressed, the MPSP goes into emergency mode. \\
+    \item \textbf{P15:} When the MPSP goes into emergency mode, the horizontal brake is released so that the patient can be taken out of the scanner. \\
+    \item \textbf{P16:} When the MPSP is in emergency mode, the \verb$resume$ button puts it back into the normal functioning mode.  \\
+    \item \textbf{P17:} When the MPSP is docked and in the rightmost position, \verb$undock$ button sends a message to the scanner to disconnect.\\
+    \item \textbf{P18:}  When the MPSP is docked and not at the rightmost position, the \verb$down$ button moves the bed to the left (towards the out of the scanner). \\
+    \item \textbf{P19:} When the MPSP is docked and calibrated, the \verb $up$ button moves the bed into the scanner. \\
+    \item \textbf{P20:} When the MPSP is docked, uncalibrated and lower than the uppermost position, the \verb$up$ button moves the bed upwards. \\
+    \item \textbf{P21:} When the MPSP is docked, uncalibrated and above the lowermost position, the \verb$down$ button moves the bed downwards. \\
+
+     
+\end{itemize}
