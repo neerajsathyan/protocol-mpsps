@@ -1,2 +1,45 @@
 \label{task2}
-\section{Global Requirements}
+% 2. List the interactions of the control system with the outside world. These are for instance ‘turning a motor on’, ‘reading that the up button is released’ and ‘applying a brake’. Describe clearly but compactly the meaning of each interaction in words.
+\section{Interactions}
+
+\begin{table}
+\begin{tabular}{l|ll}
+\hline 
+\textit{Component} & \textit{Name} & \textit{Action} \\
+\hline \\
+\verb$Motors and Brakes$ & \verb$m1UpA$ & Vertical motor M1 is turned on and moves the bed upward\\
+ & \verb$m1DownA$ & Vertical motor M1 is turned on and moves the bed downwards\\
+ & \verb$m1OffA$ & Vertical motor M1 is turned off\\
+ & \verb$m2LeftA$ & Horizontal motor M2 is turned on and moves the bed into the scanner\\
+ & \verb$m2RightA$ & Horizontal motor M2 is turned on and moves the bed out of the scanner\\
+ & \verb$m2OffA$ & Horizontal motor M2 is turned off \\
+ & \verb$vBrakeApply$ & Vertical brake B1 is applied\\
+ & \verb$vBrakeRelease$ & Vertical brake B1 is released\\
+ & \verb$hBrakeApply$ & Horizontal brake B2 is applied\\
+ & \verb$hBrakeRelease$ & Horizontal brake B2 is released\\
+ \hline 
+ 
+ \verb$Sensor$ &  \verb$isAtLeftMostPos$ & Checks if the bed is fully inside the scanner\\
+ & \verb$isAtRightMostPos$ & Checks if the bed is fully outside the scanner\\
+ & \verb$isAtStandardHeight$ & Checks if the bed is at standard height \\
+ & \verb$isAtMaxHeight$ & Checks if the bed is at the maximum height \\
+ & \verb$isAtMinHeight$ & Checks if the bed is at the minimum height\\
+ & \verb$dock$ & Checks if the bed is docked\\
+ \hline
+ 
+ \verb$Button actions$ & \verb$pressUP$ & The UP button pressed\\
+  & \verb$releaseUP$ & The UP button released\\
+  & \verb$pressDOWN$ & The DOWN button pressed\\
+  & \verb$releaseDOWN$ & The DOWN button released\\
+  & \verb$clickUNDOCK$ & The UNDOCK button is clicked \\
+  & \verb$clickRESET$ & The RESET button is clicked\\
+  & \verb$clickRESUME$ & The RESUME button is clicked\\
+  & \verb$clickSTOP$ & The STOP button is clicked\\
+  \hline
+  
+  \verb$Mode$ & \verb$Normal Mode$ & Checks if the MPSP is in normal mode.  \\
+  & \verb$Emergency Mode$ & Checks if the MPSP is in emergency mode\\
+  \hline
+\end{tabular}
+
+\end{table}
